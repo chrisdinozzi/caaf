@@ -13,4 +13,6 @@ mkdir -p ./secrets
 echo "your-admin-password" > ./secrets/ignition_admin_password
 chmod 600 ./secrets/ignition_admin_password
 cp .env.example .env   # then edit with your licence key and timezone
+
+docker compose up -d
 ```
