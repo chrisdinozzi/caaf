@@ -186,3 +186,5 @@ services:
 
     environment:
       INFLUXDB3_AUTH_TOKEN: ${INFLUXDB3_AUTH_TOKEN}
+      INFLUXDB3_LOG_FILTER: "warn"
+      
