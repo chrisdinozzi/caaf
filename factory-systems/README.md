@@ -5,6 +5,7 @@
 |NeuronEX|emqx/neuronex:3.7.1|neuronex.factory.home.lab|Gateway|
 |HiveMQ CE|hivemq/hivemq-ce:2026.5|None|MQTT broker / UNS|
 |Ignition|inductiveautomation/ignition:latest|ignition.factory.home.lab|SCADA / HMI / Historian|
+|InfluxDB 3 Core|influxdb:3-core|None|Historian|
 |Caddy|caddy:2-alpine| None	| Reverse proxy / TLS termination|
 
 ## Deployment
