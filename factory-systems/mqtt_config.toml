@@ -1,0 +1,20 @@
+[mqtt]
+broker_host = "hivemq-ce"
+broker_port = 1883
+topics = ["/neuron/mqtt-json"]
+qos = 1
+format = "json"
+
+[mapping.json]
+table_name = "plc_monitoring"
+timestamp_field = "$.timestamp:ms"
+
+[mapping.json.tags]
+node = "$.node"
+group = "$.group"
+
+[mapping.json.fields]
+fan_on = ["$.values.Fan_On","bool"]
+green_led_on = ["$.values.Green_LED_On","bool"]
+red_led_on = ["$.values.Red_LED_On","bool"]
+operating_mode = ["$.values.OperatingMode","int"]
