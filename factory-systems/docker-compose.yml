@@ -1,8 +1,8 @@
 # =============================================================================
-# Factory Homelab - Docker Compose
-# Services: NeuronEX · HiveMQ CE · Ignition · Caddy
+# Factory Homelab — Docker Compose
+# Services: NeuronEX · HiveMQ CE · Ignition · Caddy · InfluxDB3 Core
 # Network: factory-stack (internal bridge)
-# Secrets: admin passwords read from files, never hardcoded
+# Secrets: admin passwords read from files/env, never hardcoded
 # =============================================================================
 
 name: factory-homelab
@@ -18,11 +18,13 @@ volumes:
   ignition-data:
   caddy-data:     # persists TLS certs
   caddy-config:
+  influxdb3-data:
+  influxdb3-plugins:
 
 networks:
   factory-stack:
     driver: bridge
-    internal: false   # must stay false - Ignition needs internet for licence
+    internal: false   # must stay false — Ignition needs internet for licence
 
 services:
 
@@ -55,8 +57,9 @@ services:
     image: emqx/neuronex:3.7.1
     container_name: neuronex
     restart: unless-stopped
+    privileged: true
     ports:
-      - "127.0.0.1:8085:8085"   # loopback - Caddy proxies externally
+      - "127.0.0.1:8085:8085"   # loopback — Caddy proxies externally
     volumes:
       - neuronex-data:/opt/neuronex/data
     networks:
@@ -80,7 +83,7 @@ services:
     environment:
       HIVEMQ_LOG_LEVEL: INFO
     ports:
-      - "1883:1883"               # MQTT - LAN-exposed for S7-1200/Neuron
+      - "1883:1883"               # MQTT — LAN-exposed for S7-1200/Neuron
                                         # NOTE: HiveMQ CE has no web UI
                                         # Control Centre is commercial only
     volumes:
@@ -110,7 +113,10 @@ services:
       - "8043:8043"
     volumes:
       - ignition-data:/usr/local/bin/ignition/data
-
+      - ./modules:/modules   # pre-load third-party .modl files here
+                             # Ignition auto-installs on startup
+                             # Required: MQTT-Engine-signed.modl from
+                             # https://inductiveautomation.com/downloads/ignition
     environment:
       ACCEPT_IGNITION_EULA: "Y"
       GATEWAY_ADMIN_USERNAME: ${GATEWAY_ADMIN_USERNAME:-admin}
@@ -134,6 +140,9 @@ services:
       - ignition_admin_password
     networks:
       - factory-stack
+    depends_on:
+      hivemq:
+        condition: service_healthy
     command: >
       -n homelab-gateway
       -a ignition.factory.home.lab
@@ -151,3 +160,29 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  influxdb3-core:
+    image: influxdb:3-core
+    container_name: influxdb3-core
+    ports:
+      - 8181:8181
+    command:
+      - influxdb3
+      - serve
+      - --node-id=node0
+      - --object-store=file
+      - --data-dir=/var/lib/influxdb3/data
+      - --plugin-dir=/var/lib/influxdb3/plugins  # Optional: only needed for processing engine plugins
+    networks:
+      - factory-stack
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "3"
+    volumes:
+      - influxdb3-data:/var/lib/influxdb3/data
+      - influxdb3-plugins:/var/lib/influxdb3/plugins
+
+    environment:
+      INFLUXDB3_AUTH_TOKEN: ${INFLUXDB3_AUTH_TOKEN}
